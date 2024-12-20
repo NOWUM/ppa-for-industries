@@ -28,7 +28,8 @@ dependencies = [
     "sqlalchemy",
     "psycopg2-binary",
     "python-dotenv",
-    "plz2nuts"
+    "plz2nuts",
+    "windpowerlib"
 ]
 
 [project.urls]

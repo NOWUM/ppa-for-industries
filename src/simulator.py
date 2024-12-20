@@ -115,7 +115,7 @@ class Simulator(DBHandler):
         price_data = self.get_price_data(self.start_date, self.end_date)
         wind_speed_df = self.get_weather_data(convert_plz_to_nuts(str(master_data.loc['zip_code'].values[0]))[1], self.start_date, self.end_date)
         wind_turbine = WindTurbine(rotor_radius=110, cut_in_speed=3, rated_speed=12, cut_out_speed=25)
-        power_df = wind_turbine.calculate_power(wind_speed_df)
+        power_df = wind_turbine.calculate_power_with_windpowerlib(wind_speed_df)
         all_data_df = wind_turbine.calculate_market_value(self.check_granularity_and_merge(power_df, price_data))    
         print(f'Market Value of the wind turbine for the year 2019: {all_data_df["Market Value (€)"].sum()} €')
         ppa = PowerPurchaseAgreement(all_data_df)

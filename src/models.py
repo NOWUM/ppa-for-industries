@@ -5,6 +5,8 @@
 import math
 
 import pandas as pd
+from windpowerlib import ModelChain
+from windpowerlib import WindTurbine as WindpowerlibTurbine
 
 
 class WindTurbine:
@@ -26,7 +28,18 @@ class WindTurbine:
     efficiency : float, optional
         The efficiency of the turbine (default is 0.4).
     """
-    def __init__(self, rotor_radius, cut_in_speed, rated_speed, cut_out_speed, air_density=1.225, efficiency=0.4):
+
+    def __init__(
+        self,
+        turbine_type="V164/9500",
+        hub_height=107,
+        rotor_radius=87,
+        cut_in_speed=0.5,
+        cut_out_speed=25,
+        rated_speed=12,
+        air_density=1.225,
+        efficiency=0.4,
+    ):
         """
         Initializes the WindTurbine with its parameters.
 
@@ -45,14 +58,18 @@ class WindTurbine:
         efficiency : float, optional
             The efficiency of the turbine (default is 0.4).
         """
-        self.rotor_radius = rotor_radius 
+        self.turbine_type = turbine_type
+        self.hub_height = hub_height
+        self.rotor_radius = rotor_radius
         self.cut_in_speed = cut_in_speed
-        self.rated_speed = rated_speed
         self.cut_out_speed = cut_out_speed
+        self.rated_speed = rated_speed
         self.air_density = air_density
         self.efficiency = efficiency
-        self.area = math.pi * (rotor_radius ** 2)
-        self.rated_power = self.efficiency * 0.5 * self.air_density * self.area * (self.rated_speed ** 3)
+        self.area = math.pi * (rotor_radius**2)
+        self.rated_power = (
+            self.efficiency * 0.5 * self.air_density * self.area * (self.rated_speed**3)
+        )
 
     def calculate_power(self, wind_speed_df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -68,14 +85,57 @@ class WindTurbine:
         pd.DataFrame
             A DataFrame containing the calculated power data.
         """
-        wind_speed_df['Theoretical Power (W)'] = 0.5 * self.air_density * self.area * (wind_speed_df['wind_speed'] ** 3)
-        wind_speed_df['Actual Power (W)'] = self.efficiency * wind_speed_df['Theoretical Power (W)']
-        wind_speed_df.loc[wind_speed_df['wind_speed'] < self.cut_in_speed, 'Actual Power (W)'] = 0
-        wind_speed_df.loc[wind_speed_df['wind_speed'] > self.cut_out_speed, 'Actual Power (W)'] = 0
-        wind_speed_df.loc[(wind_speed_df['wind_speed'] >= self.rated_speed) & 
-                          (wind_speed_df['wind_speed'] <= self.cut_out_speed), 'Actual Power (W)'] = self.rated_power
+        wind_speed_df["Theoretical Power (W)"] = (
+            0.5 * self.air_density * self.area * (wind_speed_df["wind_speed"] ** 3)
+        )
+        wind_speed_df["Actual Power (W)"] = (
+            self.efficiency * wind_speed_df["Theoretical Power (W)"]
+        )
+        wind_speed_df.loc[
+            wind_speed_df["wind_speed"] < self.cut_in_speed, "Actual Power (W)"
+        ] = 0
+        wind_speed_df.loc[
+            wind_speed_df["wind_speed"] > self.cut_out_speed, "Actual Power (W)"
+        ] = 0
+        wind_speed_df.loc[
+            (wind_speed_df["wind_speed"] >= self.rated_speed)
+            & (wind_speed_df["wind_speed"] <= self.cut_out_speed),
+            "Actual Power (W)",
+        ] = self.rated_power
         return wind_speed_df
-    
+
+    def calculate_power_with_windpowerlib(
+        self, wind_speed_df: pd.DataFrame, roughness_length=0.03
+    ) -> pd.Series:
+        turbine_data = {
+            "turbine_type": self.turbine_type,
+            "hub_height": self.hub_height,
+        }
+        wind_turbine = WindpowerlibTurbine(**turbine_data)
+        wind_speed_df["roughness_length"] = roughness_length
+
+        weather = pd.DataFrame(
+            wind_speed_df[["wind_speed", "roughness_length"]].values.reshape(-1, 2),
+            index=wind_speed_df["timestamp"],
+            columns=[["wind_speed", "roughness_length"], [10, 10]],
+        )
+
+        modelchain_data = {
+            "wind_speed_model": "logarithmic",
+            "density_model": "interpolation_extrapolation",
+            "temperature_model": "linear_gradient",
+            "power_output_model": "power_curve",
+            "density_correction": False,
+            "obstacle_height": 0,
+            "hellman_exp": None,
+        }
+
+        modelchain = ModelChain(wind_turbine, **modelchain_data)
+        modelchain.run_model(weather)
+        wind_speed_df["Actual Power (W)"] = modelchain.power_output.values
+
+        return wind_speed_df
+
     def calculate_market_value(self, power_and_price_df):
         """
         Calculates the market value of the wind turbine's power generation.
@@ -90,10 +150,15 @@ class WindTurbine:
         pd.DataFrame
             A DataFrame containing the calculated market value data.
         """
-        power_and_price_df['Actual Power (MWh)'] = power_and_price_df['Actual Power (W)'] * 1e-6
-        power_and_price_df['Market Value (€)'] = power_and_price_df['Actual Power (MWh)'] * power_and_price_df['price']
+        power_and_price_df["Actual Power (MWh)"] = (
+            power_and_price_df["Actual Power (W)"] * 1e-6
+        )
+        power_and_price_df["Market Value (€)"] = (
+            power_and_price_df["Actual Power (MWh)"] * power_and_price_df["price"]
+        )
         return power_and_price_df
-    
+
+
 class PowerPurchaseAgreement:
     """
     A class representing a Power Purchase Agreement (PPA).
@@ -103,6 +168,7 @@ class PowerPurchaseAgreement:
     fixed_energy_price : float
         The fixed energy price of the PPA.
     """
+
     def __init__(self, market_value: pd.DataFrame):
         """
         Initializes the PowerPurchaseAgreement with the market value data.
@@ -113,7 +179,7 @@ class PowerPurchaseAgreement:
             A DataFrame containing the market value data.
         """
         self.fixed_energy_price = self.calculate_average_value(market_value)
-    
+
     def calculate_average_value(self, market_value: pd.DataFrame) -> float:
         """
         Calculates the average value of the market value data.
@@ -128,4 +194,7 @@ class PowerPurchaseAgreement:
         float
             The average value of the market value data.
         """
-        return market_value['Market Value (€)'].sum() / market_value['Actual Power (MWh)'].sum()
+        return (
+            market_value["Market Value (€)"].sum()
+            / market_value["Actual Power (MWh)"].sum()
+        )
