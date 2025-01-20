@@ -5,10 +5,14 @@
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from plz_to_nuts import convert_plz_to_nuts
+import logging
 
 from .db_handler import DBHandler
 from .models import PowerPurchaseAgreement, WindTurbine
 
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class Simulator(DBHandler):
     """
@@ -117,9 +121,9 @@ class Simulator(DBHandler):
         wind_turbine = WindTurbine(rotor_radius=110, cut_in_speed=3, rated_speed=12, cut_out_speed=25)
         power_df = wind_turbine.calculate_power_with_windpowerlib(wind_speed_df)
         all_data_df = wind_turbine.calculate_market_value(self.check_granularity_and_merge(power_df, price_data))    
-        print(f'Market Value of the wind turbine for the year 2019: {all_data_df["Market Value (€)"].sum()} €')
+        logger.info(f'Market Value of the wind turbine for the year 2019: {all_data_df["Market Value (€)"].sum()} €')
         ppa = PowerPurchaseAgreement(all_data_df)
-        print(f'Fixed Energy Price of the PPA: {ppa.fixed_energy_price} €/MWh')
+        logger.info(f'Fixed Energy Price of the PPA: {ppa.fixed_energy_price} €/MWh')
         
         load_data = self.cast_time_series_to_year(load_data, 2019)        
         all_data_df = self.check_granularity_and_merge(all_data_df, load_data)
@@ -137,5 +141,5 @@ class Simulator(DBHandler):
             all_data_df['PPA Surplus (MWh)'] * all_data_df['price']                                                 # Verkauf von Überschüssen
         )
         
-        print(f'The Cost of  the As-Is Scenario: {all_data_df["Scenario As Is (€)"].sum()} €')
-        print(f'The Cost of the PPA Scenario: {all_data_df["Scenario With PPA (€)"].sum()} €')
+        logger.info(f'The Cost of  the As-Is Scenario: {all_data_df["Scenario As Is (€)"].sum()} €')
+        logger.info(f'The Cost of the PPA Scenario: {all_data_df["Scenario With PPA (€)"].sum()} €')
