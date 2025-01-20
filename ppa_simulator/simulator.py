@@ -24,8 +24,6 @@ class Simulator(DBHandler):
 
     Attributes:
     ----------
-    db_uri : str
-        The URI of the database containing load profile data.
     start_date : str
         The start date for the simulation.
     end_date : str
@@ -192,3 +190,9 @@ class Simulator(DBHandler):
         logger.info(
             f"The Cost of the PPA Scenario: {all_data_df['Scenario With PPA (€)'].sum()} €"
         )
+        
+        try:
+            self.write_data(all_data_df, "ppa_results")
+            logger.info(f"Results for profile {profile_id} saved to databse successfully")
+        except Exception as e:
+            logger.error(f"Error while saving results for profile {profile_id}: {e}")

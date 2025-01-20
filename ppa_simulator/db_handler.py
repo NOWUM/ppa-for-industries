@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import pandas as pd
+from sqlalchemy import create_engine
 
 
 class DBHandler:
@@ -110,3 +111,18 @@ class DBHandler:
         if start_date and end_date:
             sql += f" and time between '{start_date}' and '{end_date}'"
         return pd.read_sql(sql, self.db_uri).rename(columns={'time': 'timestamp'})
+    
+    def write_data(self, data: pd.DataFrame, table_name: str):
+        """
+        Writes data to the database.
+
+        Parameters:
+        ----------
+        data : pd.DataFrame
+            The data to write to the database.
+        table_name : str
+            The name of the table to write the data to.
+        """
+        connection = create_engine(self.db_uri)                        
+        data.to_sql(table_name, connection, schema='vea_results_timeseries', if_exists='append', index=False)
+        connection.dispose()
