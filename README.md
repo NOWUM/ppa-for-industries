@@ -2,7 +2,7 @@
 This is a Tool for the Open-Energy-Data-Server which analyzes PPAs for various industries in Germany.
 Set up your own OEDS: https://github.com/NOWUM/open-energy-data-server
 
-install using:
+Install using:
 
 ```
 pip install -e .
@@ -24,3 +24,28 @@ GROUP BY("Typenbezeichnung", "Nettonennleistung", "Nabenhoehe", "Rotordurchmesse
 ORDER BY count desc
 ```
 This shows that the Vestas V164/9500 (9.5MW) is the most new built turbine.
+
+Prior to running this package make sure to create a results table in your OEDS database, so that the simulation results get saved properly:
+```SQL
+CREATE TABLE vea_results_timeseries.ppa_results
+(
+timestamp TIMESTAMP NOT NULL,
+wind_speed REAL,
+roughness_length REAL,
+"Actual Power (W)" REAL,
+price REAL,
+"Actual Power (MWh)" REAL,
+"Market Value (€)" REAL,
+"Load (kWh)" REAL,
+"Load (MWh)" REAL,
+"PPA Surplus (MWh)" REAL,
+"Scenario As Is (€)" REAL,
+"Scenario With PPA (€)" REAL,
+plz VARCHAR(10),
+nuts_id VARCHAR(20),
+profile_id INTEGER NOT NULL,
+sector_group_id VARCHAR(10),
+sector_group VARCHAR(100),
+PRIMARY KEY (timestamp, profile_id)
+);
+```
