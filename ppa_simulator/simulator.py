@@ -179,6 +179,12 @@ class Simulator(DBHandler):
             - all_data_df["PPA Surplus (MWh)"]
             * all_data_df["price"]                                          # Verkauf von Überschüssen
         )
+        
+        all_data_df['plz'] = master_data.loc['zip_code'].values[0]
+        all_data_df['nuts_id']= convert_plz_to_nuts(str(master_data.loc["zip_code"].values[0]))[1]
+        all_data_df['profile_id'] = profile_id
+        all_data_df['sector_group_id'] = master_data.loc['sector_group_id'].values[0]
+        all_data_df['sector_group'] = master_data.loc['sector_group'].values[0]
 
         logger.info(
             f"The Cost of  the As-Is Scenario: {all_data_df['Scenario As Is (€)'].sum()} €"
