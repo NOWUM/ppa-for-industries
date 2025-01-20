@@ -27,4 +27,7 @@ def main(profile_id: int, DB_URI: str):
 if __name__ == "__main__":
     load_dotenv()
     DB_URI = os.getenv("URI")
+    # for i in range(5359):
+    #     main(i, DB_URI)
+
     main(531, DB_URI)
