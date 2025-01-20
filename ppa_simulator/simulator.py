@@ -13,7 +13,10 @@ from .models import PowerPurchaseAgreement, WindTurbine
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    filename="ppa_simulator.log",
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -141,6 +144,11 @@ class Simulator(DBHandler):
             self.start_date,
             self.end_date,
         )
+        if wind_speed_df.empty:
+            logger.error(
+                f"No wind speed data found for the specified location {master_data.loc['zip_code'].values[0]}, nuts code {convert_plz_to_nuts(str(master_data.loc['zip_code'].values[0]))[1]}"
+            )
+            return
         wind_turbine = WindTurbine(
             rotor_radius=110, cut_in_speed=3, rated_speed=12, cut_out_speed=25
         )
@@ -177,12 +185,14 @@ class Simulator(DBHandler):
             - all_data_df["PPA Surplus (MWh)"]
             * all_data_df["price"]                                          # Verkauf von Überschüssen
         )
-        
-        all_data_df['plz'] = master_data.loc['zip_code'].values[0]
-        all_data_df['nuts_id']= convert_plz_to_nuts(str(master_data.loc["zip_code"].values[0]))[1]
-        all_data_df['profile_id'] = profile_id
-        all_data_df['sector_group_id'] = master_data.loc['sector_group_id'].values[0]
-        all_data_df['sector_group'] = master_data.loc['sector_group'].values[0]
+
+        all_data_df["plz"] = master_data.loc["zip_code"].values[0]
+        all_data_df["nuts_id"] = convert_plz_to_nuts(
+            str(master_data.loc["zip_code"].values[0])
+        )[1]
+        all_data_df["profile_id"] = profile_id
+        all_data_df["sector_group_id"] = master_data.loc["sector_group_id"].values[0]
+        all_data_df["sector_group"] = master_data.loc["sector_group"].values[0]
 
         logger.info(
             f"The Cost of  the As-Is Scenario: {all_data_df['Scenario As Is (€)'].sum()} €"
@@ -190,9 +200,11 @@ class Simulator(DBHandler):
         logger.info(
             f"The Cost of the PPA Scenario: {all_data_df['Scenario With PPA (€)'].sum()} €"
         )
-        
+
         try:
             self.write_data(all_data_df, "ppa_results")
-            logger.info(f"Results for profile {profile_id} saved to databse successfully")
+            logger.info(
+                f"Results for profile {profile_id} saved to databse successfully"
+            )
         except Exception as e:
             logger.error(f"Error while saving results for profile {profile_id}: {e}")
