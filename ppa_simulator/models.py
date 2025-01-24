@@ -105,19 +105,19 @@ class WindTurbine:
         wind_speed_df["Theoretical Power (W)"] = (
             0.5 * self.air_density * self.area * (wind_speed_df["wind_speed"] ** 3)
         )
-        wind_speed_df["Actual Power (W)"] = (
+        wind_speed_df["actual_power(w)"] = (
             self.efficiency * wind_speed_df["Theoretical Power (W)"]
         )
         wind_speed_df.loc[
-            wind_speed_df["wind_speed"] < self.cut_in_speed, "Actual Power (W)"
+            wind_speed_df["wind_speed"] < self.cut_in_speed, "actual_power(w)"
         ] = 0
         wind_speed_df.loc[
-            wind_speed_df["wind_speed"] > self.cut_out_speed, "Actual Power (W)"
+            wind_speed_df["wind_speed"] > self.cut_out_speed, "actual_power(w)"
         ] = 0
         wind_speed_df.loc[
             (wind_speed_df["wind_speed"] >= self.rated_speed)
             & (wind_speed_df["wind_speed"] <= self.cut_out_speed),
-            "Actual Power (W)",
+            "actual_power(w)",
         ] = self.rated_power
         return wind_speed_df
 
@@ -164,7 +164,7 @@ class WindTurbine:
 
         modelchain = ModelChain(wind_turbine, **modelchain_data)
         modelchain.run_model(weather)
-        wind_speed_df["Actual Power (W)"] = modelchain.power_output.values
+        wind_speed_df["actual_power(w)"] = modelchain.power_output.values
 
         return wind_speed_df
 
@@ -182,11 +182,11 @@ class WindTurbine:
         pd.DataFrame
             A DataFrame containing the calculated market value data.
         """
-        power_and_price_df["Actual Power (MWh)"] = (
-            power_and_price_df["Actual Power (W)"] * 1e-6
+        power_and_price_df["actual_power(mwh)"] = (
+            power_and_price_df["actual_power(w)"] * 1e-6
         )
-        power_and_price_df["Market Value (€)"] = (
-            power_and_price_df["Actual Power (MWh)"] * power_and_price_df["price"]
+        power_and_price_df["market_value(€)"] = (
+            power_and_price_df["actual_power(mwh)"] * power_and_price_df["price"]
         )
         return power_and_price_df
 
@@ -232,6 +232,6 @@ class PowerPurchaseAgreement:
             The average value of the market value data.
         """
         return (
-            market_value["Market Value (€)"].sum()
-            / market_value["Actual Power (MWh)"].sum()
+            market_value["market_value(€)"].sum()
+            / market_value["actual_power(mwh)"].sum()
         )

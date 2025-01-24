@@ -157,7 +157,7 @@ class Simulator(DBHandler):
             self.check_granularity_and_merge(power_df, price_data)
         )
         logger.info(
-            f"Market Value of the wind turbine for the year 2019: {all_data_df['Market Value (€)'].sum()} €"
+            f"Market Value of the wind turbine for the year 2019: {all_data_df['market_value(€)'].sum()} €"
         )
         ppa = PowerPurchaseAgreement(all_data_df)
         logger.info(f"Fixed Energy Price of the PPA: {ppa.fixed_energy_price} €/MWh")
@@ -165,24 +165,24 @@ class Simulator(DBHandler):
         load_data = self.cast_time_series_to_year(load_data, 2019)
         all_data_df = self.check_granularity_and_merge(all_data_df, load_data)
 
-        all_data_df["Load (MWh)"] = all_data_df["Load (kWh)"] / 1000
-        all_data_df["PPA Surplus (MWh)"] = (
-            all_data_df["Actual Power (MWh)"] - all_data_df["Load (MWh)"]
+        all_data_df["load(mwh)"] = all_data_df["load(kwh)"] / 1000
+        all_data_df["ppa_surplus(mwh)"] = (
+            all_data_df["actual_power(mwh)"] - all_data_df["load(mwh)"]
         ).clip(lower=0)
-        all_data_df["Scenario As Is (€)"] = (
-            all_data_df["price"] * all_data_df["Load (MWh)"]
+        all_data_df["scenario_as_is(€)"] = (
+            all_data_df["price"] * all_data_df["load(mwh)"]
         )
 
         # Berechnung der Kosten:
         # - Fehlende Energie wird zugekauft (positiver Bedarf)
         # - Überschüssige Energie wird zum Marktpreis verkauft
-        all_data_df["Scenario With PPA (€)"] = (
-            (all_data_df["Load (MWh)"] - all_data_df["Actual Power (MWh)"]).clip(
+        all_data_df["scenario_with_ppa(€)"] = (
+            (all_data_df["load(mwh)"] - all_data_df["actual_power(mwh)"]).clip(
                 lower=0
             )
             * all_data_df["price"]                                          # Zukaufkosten
-            + all_data_df["Actual Power (MWh)"] * ppa.fixed_energy_price    # PPA Kosten
-            - all_data_df["PPA Surplus (MWh)"]
+            + all_data_df["actual_power(mwh)"] * ppa.fixed_energy_price    # PPA Kosten
+            - all_data_df["ppa_surplus(mwh)"]
             * all_data_df["price"]                                          # Verkauf von Überschüssen
         )
 
@@ -195,10 +195,10 @@ class Simulator(DBHandler):
         all_data_df["sector_group"] = master_data.loc["sector_group"].values[0]
 
         logger.info(
-            f"The Cost of  the As-Is Scenario: {all_data_df['Scenario As Is (€)'].sum()} €"
+            f"The Cost of  the As-Is Scenario: {all_data_df['scenario_as_is(€)'].sum()} €"
         )
         logger.info(
-            f"The Cost of the PPA Scenario: {all_data_df['Scenario With PPA (€)'].sum()} €"
+            f"The Cost of the PPA Scenario: {all_data_df['scenario_with_ppa(€)'].sum()} €"
         )
 
         try:

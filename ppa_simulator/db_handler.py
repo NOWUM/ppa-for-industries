@@ -48,7 +48,7 @@ class DBHandler:
         data = pd.read_sql(sql, self.db_uri)
         data["value"] /= 4
         data = data.drop(columns=['id'])
-        data = data.rename(columns={'value': 'Load (kWh)'})
+        data = data.rename(columns={'value': 'load(kwh)'})
         return data
     
     def get_price_data(self, start_date: str=None, end_date: str=None) -> pd.DataFrame:
