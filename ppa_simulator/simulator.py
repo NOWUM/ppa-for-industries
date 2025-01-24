@@ -209,7 +209,7 @@ class Simulator(DBHandler):
         try:
             self.write_data(all_data_df, "ppa_results")
             logger.info(
-                f"Results for profile {profile_id} saved to databse successfully"
+                f"Results for profile {profile_id} saved to database successfully"
             )
         except Exception as e:
             logger.error(f"Error while saving results for profile {profile_id}: {e}")
