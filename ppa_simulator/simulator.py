@@ -127,7 +127,7 @@ class Simulator(DBHandler):
             .drop_duplicates(subset=timestamp_column)
         )
 
-    def simulate(self, profile_id: int):
+    def simulate(self, profile_id: int, scenarios: list):
         """
         Simulates the wind turbine's power generation and market value.
 
@@ -135,6 +135,8 @@ class Simulator(DBHandler):
         ----------
         profile_id : int
             The ID of the load profile to simulate.
+        scenarios : list
+            A list of factors that the market price is multiplied by, simulating market price volatility.
         """
         master_data = self.get_master_data(profile_id)
         load_data = self.get_load_data(profile_id)
@@ -169,22 +171,26 @@ class Simulator(DBHandler):
         all_data_df["ppa_surplus(mwh)"] = (
             all_data_df["actual_power(mwh)"] - all_data_df["load(mwh)"]
         ).clip(lower=0)
-        all_data_df["scenario_as_is(€)"] = (
-            all_data_df["price"] * all_data_df["load(mwh)"]
-        )
 
         # Berechnung der Kosten:
         # - Fehlende Energie wird zugekauft (positiver Bedarf)
         # - Überschüssige Energie wird zum Marktpreis verkauft
-        all_data_df["scenario_with_ppa(€)"] = (
-            (all_data_df["load(mwh)"] - all_data_df["actual_power(mwh)"]).clip(
-                lower=0
+        for scenario in scenarios:
+            all_data_df[f"scenario_as_is_{scenario}(€)"] = (
+                all_data_df["price"] * all_data_df["load(mwh)"] * scenario
             )
-            * all_data_df["price"]                                          # Zukaufkosten
-            + all_data_df["actual_power(mwh)"] * ppa.fixed_energy_price    # PPA Kosten
-            - all_data_df["ppa_surplus(mwh)"]
-            * all_data_df["price"]                                          # Verkauf von Überschüssen
-        )
+            all_data_df[f"scenario_with_ppa_{scenario}(€)"] = (
+                (all_data_df["load(mwh)"] - all_data_df["actual_power(mwh)"]).clip(
+                    lower=0
+                )
+                * all_data_df["price"]
+                * scenario                              # Zukaufkosten
+                + all_data_df["actual_power(mwh)"]
+                * ppa.fixed_energy_price                # PPA Kosten
+                - all_data_df["ppa_surplus(mwh)"]
+                * all_data_df["price"]
+                * scenario                              # Verkauf von Überschüssen
+            )
 
         all_data_df["plz"] = master_data.loc["zip_code"].values[0]
         all_data_df["nuts_id"] = convert_plz_to_nuts(
