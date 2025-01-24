@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from .simulator import Simulator
 
 
-def main(DB_URI: str, profile_id: int = None, scenario: list = [1.02, 1.05, 1.1]):
+def main(DB_URI: str, profile_id: int = None, scenario: list = [1, 1.02, 1.05, 1.1]):
     """
     Runs the simulation for the specified database URI, profile ID and scenario.
 

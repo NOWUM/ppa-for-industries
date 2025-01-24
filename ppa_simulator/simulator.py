@@ -191,6 +191,12 @@ class Simulator(DBHandler):
                 * all_data_df["price"]
                 * scenario                              # Verkauf von Überschüssen
             )
+            logger.info(
+                f"The Cost of  the As-Is Scenario {scenario}: {all_data_df[f'scenario_as_is_{scenario}(€)'].sum()} €"
+            )
+            logger.info(
+                f"The Cost of the PPA Scenario {scenario}: {all_data_df[f'scenario_with_ppa_{scenario}(€)'].sum()} €"
+            )
 
         all_data_df["plz"] = master_data.loc["zip_code"].values[0]
         all_data_df["nuts_id"] = convert_plz_to_nuts(
@@ -199,13 +205,6 @@ class Simulator(DBHandler):
         all_data_df["profile_id"] = profile_id
         all_data_df["sector_group_id"] = master_data.loc["sector_group_id"].values[0]
         all_data_df["sector_group"] = master_data.loc["sector_group"].values[0]
-
-        logger.info(
-            f"The Cost of  the As-Is Scenario: {all_data_df['scenario_as_is(€)'].sum()} €"
-        )
-        logger.info(
-            f"The Cost of the PPA Scenario: {all_data_df['scenario_with_ppa(€)'].sum()} €"
-        )
 
         try:
             self.write_data(all_data_df, "ppa_results")
