@@ -44,8 +44,8 @@ class WindTurbine:
 
     def __init__(
         self,
-        turbine_type="V164/9500",
-        hub_height=107,
+        turbine_type="V126/3450",
+        hub_height=149,
         rotor_radius=87,
         cut_in_speed=0.5,
         cut_out_speed=25,
