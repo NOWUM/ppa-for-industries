@@ -55,3 +55,15 @@ sector_group VARCHAR(100),
 PRIMARY KEY (timestamp, profile_id)
 );
 ```
+
+```SQL
+SELECT
+    profile_id,
+    ROUND(SUM("scenario_as_is_1(€)")::numeric, 2) AS scenario_as_is,
+    ROUND(SUM("scenario_with_ppa_1(€)")::numeric, 2) AS scenario_ppa,
+    ROUND(ABS(SUM("scenario_as_is_1(€)")::numeric - SUM("scenario_with_ppa_1(€)")::numeric), 2) AS difference
+FROM vea_results_timeseries.ppa_results
+GROUP BY profile_id
+HAVING ROUND(SUM("scenario_as_is_1(€)")::numeric, 2) <> ROUND(SUM("scenario_with_ppa_1(€)")::numeric, 2)
+ORDER BY difference DESC;
+```
