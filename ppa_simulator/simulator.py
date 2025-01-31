@@ -151,15 +151,28 @@ class Simulator(DBHandler):
                 f"No wind speed data found for the specified location {master_data.loc['zip_code'].values[0]}, nuts code {convert_plz_to_nuts(str(master_data.loc['zip_code'].values[0]))[1]}"
             )
             return
+
+        yearly_consumption = load_data["load(kwh)"].sum() * 1e-3
+        
         wind_turbine = WindTurbine(
             rotor_radius=110, cut_in_speed=3, rated_speed=12, cut_out_speed=25
         )
+        
+        average_yearly_power = wind_speed_df["actual_power_single_turbine(w)"].mean()* 1e-6 * len(wind_speed_df)
+        
+        numer_of_wind_turbines = yearly_consumption / average_yearly_power
+        
+        
         power_df = wind_turbine.calculate_power_with_windpowerlib(wind_speed_df)
+        
         all_data_df = wind_turbine.calculate_market_value(
-            self.check_granularity_and_merge(power_df, price_data)
+            self.check_granularity_and_merge(power_df, price_data), numer_of_wind_turbines
         )
         logger.info(
-            f"Market Value of the wind turbine for the year 2019: {all_data_df['market_value(€)'].sum()} €"
+            f"Market Value of the wind turbine for the year 2019: {all_data_df['market_value_single_turbine(€)'].sum()} €"
+        )
+        logger.info(
+            f"Market Value of the needed number of wind turbines for the year 2019: {all_data_df['market_value_needed_turbines(€)'].sum()} €"
         )
         ppa = PowerPurchaseAgreement(all_data_df)
         logger.info(f"Fixed Energy Price of the PPA: {ppa.fixed_energy_price} €/MWh")
@@ -169,7 +182,7 @@ class Simulator(DBHandler):
 
         all_data_df["load(mwh)"] = all_data_df["load(kwh)"] / 1000
         all_data_df["ppa_surplus(mwh)"] = (
-            all_data_df["actual_power(mwh)"] - all_data_df["load(mwh)"]
+            all_data_df["actual_power_needed_turbines(mwh)"] - all_data_df["load(mwh)"]
         ).clip(lower=0)
 
         # Berechnung der Kosten:
@@ -180,12 +193,12 @@ class Simulator(DBHandler):
                 all_data_df["price"] * all_data_df["load(mwh)"] * scenario
             )
             all_data_df[f"scenario_with_ppa_{scenario}(€)"] = (
-                (all_data_df["load(mwh)"] - all_data_df["actual_power(mwh)"]).clip(
+                (all_data_df["load(mwh)"] - all_data_df["actual_power_needed_turbines(mwh)"]).clip(
                     lower=0
                 )
                 * all_data_df["price"]
                 * scenario                              # Zukaufkosten
-                + all_data_df["actual_power(mwh)"]
+                + all_data_df["actual_power_needed_turbines(mwh)"]
                 * ppa.fixed_energy_price                # PPA Kosten
                 - all_data_df["ppa_surplus(mwh)"]
                 * all_data_df["price"]

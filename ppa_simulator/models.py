@@ -105,19 +105,19 @@ class WindTurbine:
         wind_speed_df["Theoretical Power (W)"] = (
             0.5 * self.air_density * self.area * (wind_speed_df["wind_speed"] ** 3)
         )
-        wind_speed_df["actual_power(w)"] = (
+        wind_speed_df["actual_power_single_turbine(w)"] = (
             self.efficiency * wind_speed_df["Theoretical Power (W)"]
         )
         wind_speed_df.loc[
-            wind_speed_df["wind_speed"] < self.cut_in_speed, "actual_power(w)"
+            wind_speed_df["wind_speed"] < self.cut_in_speed, "actual_power_single_turbine(w)"
         ] = 0
         wind_speed_df.loc[
-            wind_speed_df["wind_speed"] > self.cut_out_speed, "actual_power(w)"
+            wind_speed_df["wind_speed"] > self.cut_out_speed, "actual_power_single_turbine(w)"
         ] = 0
         wind_speed_df.loc[
             (wind_speed_df["wind_speed"] >= self.rated_speed)
             & (wind_speed_df["wind_speed"] <= self.cut_out_speed),
-            "actual_power(w)",
+            "actual_power_single_turbine(w)",
         ] = self.rated_power
         return wind_speed_df
 
@@ -164,11 +164,11 @@ class WindTurbine:
 
         modelchain = ModelChain(wind_turbine, **modelchain_data)
         modelchain.run_model(weather)
-        wind_speed_df["actual_power(w)"] = modelchain.power_output.values
+        wind_speed_df["actual_power_single_turbine(w)"] = modelchain.power_output.values
 
         return wind_speed_df
 
-    def calculate_market_value(self, power_and_price_df):
+    def calculate_market_value(self, power_and_price_df, numer_of_wind_turbines):
         """
         Calculates the market value of the wind turbine's power generation.
 
@@ -182,11 +182,19 @@ class WindTurbine:
         pd.DataFrame
             A DataFrame containing the calculated market value data.
         """
-        power_and_price_df["actual_power(mwh)"] = (
-            power_and_price_df["actual_power(w)"] * 1e-6
+        power_and_price_df["actual_power_single_turbine(mwh)"] = (
+            power_and_price_df["actual_power_single_turbine(w)"] * 1e-6
         )
-        power_and_price_df["market_value(€)"] = (
-            power_and_price_df["actual_power(mwh)"] * power_and_price_df["price"]
+        power_and_price_df["actual_power_needed_turbines(mwh)"] = (
+            power_and_price_df["actual_power_single_turbine(mwh)"]
+            * numer_of_wind_turbines
+        )
+        power_and_price_df["market_value_single_turbine(€)"] = (
+            power_and_price_df["actual_power_single_turbine(mwh)"] * power_and_price_df["price"]
+        )
+        power_and_price_df["market_value_needed_turbines(€)"] = (
+            power_and_price_df["market_value_single_turbine(€)"]
+            * numer_of_wind_turbines
         )
         return power_and_price_df
 
@@ -233,5 +241,5 @@ class PowerPurchaseAgreement:
         """
         return (
             market_value["market_value(€)"].sum()
-            / market_value["actual_power(mwh)"].sum()
+            / market_value["actual_power_single_turbine(mwh)"].sum()
         )
