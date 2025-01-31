@@ -158,12 +158,11 @@ class Simulator(DBHandler):
             rotor_radius=110, cut_in_speed=3, rated_speed=12, cut_out_speed=25
         )
         
-        average_yearly_power = wind_speed_df["actual_power_single_turbine(w)"].mean()* 1e-6 * len(wind_speed_df)
-        
-        numer_of_wind_turbines = yearly_consumption / average_yearly_power
         
         
         power_df = wind_turbine.calculate_power_with_windpowerlib(wind_speed_df)
+        average_yearly_power = power_df["actual_power_single_turbine(w)"].mean()* 1e-6 * len(wind_speed_df)
+        numer_of_wind_turbines = yearly_consumption / average_yearly_power
         
         all_data_df = wind_turbine.calculate_market_value(
             self.check_granularity_and_merge(power_df, price_data), numer_of_wind_turbines

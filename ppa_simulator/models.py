@@ -240,6 +240,6 @@ class PowerPurchaseAgreement:
             The average value of the market value data.
         """
         return (
-            market_value["market_value(€)"].sum()
+            market_value["market_value_single_turbine(€)"].sum()
             / market_value["actual_power_single_turbine(mwh)"].sum()
         )
