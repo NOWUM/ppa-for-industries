@@ -50,7 +50,7 @@ class Simulator(DBHandler):
         self.start_date = start_date
         self.end_date = end_date
 
-    def check_granularity_and_merge(self, df1, df2):
+    def check_granularity_and_merge(self, df1, df2, method="mean"):
         """
         Checks the granularity of the two DataFrames and merges them.
 
@@ -74,7 +74,7 @@ class Simulator(DBHandler):
             df1_resampled = (
                 df1.set_index("timestamp")
                 .resample(df2_granularity)
-                .mean()
+                .agg(method)
                 .reset_index()
             )
             df2_resampled = df2
@@ -82,7 +82,7 @@ class Simulator(DBHandler):
             df2_resampled = (
                 df2.set_index("timestamp")
                 .resample(df1_granularity)
-                .ffill()
+                .agg(method)
                 .reset_index()
             )
             df1_resampled = df1
@@ -177,7 +177,7 @@ class Simulator(DBHandler):
         logger.info(f"Fixed Energy Price of the PPA: {ppa.fixed_energy_price} €/MWh")
 
         load_data = self.cast_time_series_to_year(load_data, 2019)
-        all_data_df = self.check_granularity_and_merge(all_data_df, load_data)
+        all_data_df = self.check_granularity_and_merge(all_data_df, load_data, method = "sum")
 
         all_data_df["load(mwh)"] = all_data_df["load(kwh)"] / 1000
         all_data_df["ppa_surplus(mwh)"] = (
