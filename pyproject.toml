@@ -29,7 +29,8 @@ dependencies = [
     "psycopg2-binary",
     "python-dotenv",
     "plz2nuts",
-    "windpowerlib"
+    "windpowerlib",
+    "tqdm"
 ]
 
 [project.urls]
