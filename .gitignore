@@ -166,4 +166,4 @@ cython_debug/
 *.csv
 *.db
 models
-.aider*
+*.ipynb
