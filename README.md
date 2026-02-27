@@ -1,4 +1,6 @@
 # PPAs-For-Industries
+[![IEEE Paper](https://img.shields.io/badge/IEEE-Paper-blue?logo=ieee)](https://doi.org/10.1109/EEM64765.2025.11050100)
+
 This is a Tool for the Open-Energy-Data-Server which analyzes PPAs for various industries in Germany.
 Set up your own OEDS: https://github.com/NOWUM/open-energy-data-server
 
